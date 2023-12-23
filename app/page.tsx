@@ -40,45 +40,42 @@ export default function Home() {
     setLoading(true);
     // wait 1 sec
     setOutputExpanded(true);
-    // const r: Message = {
-    //   role: "assistant",
-    //   content: `Bei der Altersvorsorge gibt es verschiedene wichtige Aspekte, die berücksichtigt werden sollten. Die Deutsche
-    //     Rentenversicherung erklärt die Altersvorsorge anhand der "Drei Säulen der Altersvorsorge", die aus der gesetzlichen
-    //     Rentenversicherung, der betrieblichen Altersvorsorge und der privaten Vorsorge besteht. Die betriebliche
-    //     Altersvorsorge (bAV) wird über den Arbeitgeber aufgebaut und ist gesetzlich vorgeschrieben. Die private
-    //     Altersvorsorge umfasst verschiedene Strategien zur langfristigen Vermögensbildung, wie Wertpapiere, Fonds,
-    //     Immobilien und Versicherungen. Zudem gibt es staatlich geförderte Möglichkeiten zur Vorsorge im Alter, wie
-    //     die Riester-Rente und die betriebliche Altersvorsorge. Es ist wichtig, die individuelle Lebenssituation, das Alter
-    //     und die Risikobereitschaft bei der Auswahl der Altersvorsorge zu berücksichtigen. Die Altersvorsorge ist
-    //     entscheidend, da die gesetzliche Rente oft nicht ausreicht, um den finanziellen Bedarf im Alter zu decken.`,
-    //   links: [
-    //     "https://apps.datev.de/help-center/documents/1031656",
-    //     "https://apps.datev.de/help-center/documents/1034821",
-    //   ],
-    // };
-    // setTimeout(() => {
-    //   setHistory((oldHistory) => [...oldHistory, r]);
-    //   setLoading(false);
-    //   if (r.links) {
-    //     fetchPdfSources(r.links);
-    //   }
-    // }, 1000);
-    fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: message, history: history }),
-    })
-      .then(async (res) => {
-        const r = await res.json();
-        setHistory((oldHistory) => [...oldHistory, r]);
-        setLoading(false);
-        if (r.links) {
-          fetchPdfSources(r.links);
-        }
-      })
-      .catch((err) => {
-        alert(err);
-      });
+    const r: Message = {
+      role: "assistant",
+      content: `Bei der Altersvorsorge gibt es verschiedene wichtige Aspekte, die berücksichtigt werden sollten. Die Deutsche
+        Rentenversicherung erklärt die Altersvorsorge anhand der "Drei Säulen der Altersvorsorge", die aus der gesetzlichen
+        Rentenversicherung, der betrieblichen Altersvorsorge und der privaten Vorsorge besteht. Die betriebliche
+        Altersvorsorge (bAV) wird über den Arbeitgeber aufgebaut und ist gesetzlich vorgeschrieben. Die private
+        Altersvorsorge umfasst verschiedene Strategien zur langfristigen Vermögensbildung, wie Wertpapiere, Fonds,
+        Immobilien und Versicherungen. Zudem gibt es staatlich geförderte Möglichkeiten zur Vorsorge im Alter, wie
+        die Riester-Rente und die betriebliche Altersvorsorge. Es ist wichtig, die individuelle Lebenssituation, das Alter
+        und die Risikobereitschaft bei der Auswahl der Altersvorsorge zu berücksichtigen. Die Altersvorsorge ist
+        entscheidend, da die gesetzliche Rente oft nicht ausreicht, um den finanziellen Bedarf im Alter zu decken.`,
+      links: [
+        "https://apps.datev.de/help-center/documents/1031656",
+        "https://apps.datev.de/help-center/documents/1034821",
+      ],
+    };
+    setTimeout(() => {
+      setHistory((oldHistory) => [...oldHistory, r]);
+      setLoading(false);
+      if (r.links) {
+        fetchPdfSources(r.links);
+      }
+    }, 1000);
+    // fetch("/api/chat", {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({ query: message, history: history }),
+    // })
+    //   .then(async (res) => {
+    //     const r = await res.json();
+    //     setHistory((oldHistory) => [...oldHistory, r]);
+    //     setLoading(false);
+    //   })
+    //   .catch((err) => {
+    //     alert(err);
+    //   });
   };
 
   const formatPageName = (url: string) => {
@@ -155,21 +152,8 @@ export default function Home() {
     }
   }, [history]);
 
-  const getHyChatData = async () => {
-    fetch("http://localhost:8080/api/home", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data["message"]);
-        alert(data["message"]);
-      });
-  };
-
   return (
     <main className="h-screen bg-white p-6 flex flex-col">
-      <button onClick={getHyChatData}>Get HyChat Data</button>
       <div className="flex flex-col absolute left-14 top-[-6rem]">
         <span className="block text-xl text-white font-bold">
           Hilfe-Center mit KI

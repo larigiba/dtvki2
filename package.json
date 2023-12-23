@@ -35,9 +35,5 @@
   },
   "devDependencies": {
     "encoding": "^0.1.13"
-  },
-  "engines": {
-    "node": ">=18",
-    "npm": "8.1.0"
   }
 }
