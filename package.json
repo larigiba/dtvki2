@@ -1,0 +1,43 @@
+{
+  "name": "ind-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@pinecone-database/pinecone": "^0.1.6",
+    "@react-pdf/renderer": "^3.1.14",
+    "@types/node": "20.4.10",
+    "@types/react": "18.2.20",
+    "@types/react-dom": "18.2.7",
+    "autoprefixer": "10.4.14",
+    "axios": "^1.6.2",
+    "canvas": "^2.11.2",
+    "clsx": "^2.0.0",
+    "debug": "^4.3.4",
+    "follow-redirects": "^1.15.2",
+    "langchain": "^0.0.127",
+    "next": "13.4.13",
+    "pinecone-client": "^1.1.0",
+    "postcss": "8.4.27",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-feather": "^2.0.10",
+    "react-pdf": "^5.3.2",
+    "supports-color": "^8.1.1",
+    "tailwind-scrollbar-hide": "^1.1.7",
+    "tailwindcss": "3.3.3",
+    "typescript": "5.1.6"
+  },
+  "devDependencies": {
+    "encoding": "^0.1.13"
+  },
+  "engines": {
+    "node": ">=18",
+    "npm": "8.1.0"
+  }
+}
