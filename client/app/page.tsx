@@ -159,12 +159,9 @@ export default function Home() {
     //   process.env.NODE_ENV === "development"
     //     ? "https://localhost:8080/api/home"
     //     : "https://dtv-backend.railway.internal/api/home";
-    let url = "https://dtv-backend.railway.internal/api/home";
+    let url1 = "https://dtv-backend.railway.internal/api/home";
     axios
-      .post(url, {
-        query: message,
-        history: history,
-      })
+      .post(url1)
       .then((res) => {
         const r = res.data;
         alert(r["message"]);
@@ -173,12 +170,9 @@ export default function Home() {
         alert(err);
       });
 
-    let url = "https://dtv-backend-production.up.railway.app/api/home";
+    let url2 = "https://dtv-backend-production.up.railway.app/api/home";
     axios
-      .post(url, {
-        query: message,
-        history: history,
-      })
+      .post(url2)
       .then((res) => {
         const r = res.data;
         alert(r["message"]);
@@ -187,12 +181,9 @@ export default function Home() {
         alert(err);
       });
 
-    let url = "https://dtv-backend-production.up.railway.app:8080/api/home";
+    let url3 = "https://dtv-backend-production.up.railway.app:8080/api/home";
     axios
-      .post(url, {
-        query: message,
-        history: history,
-      })
+      .post(url3)
       .then((res) => {
         const r = res.data;
         alert(r["message"]);
@@ -201,12 +192,9 @@ export default function Home() {
         alert(err);
       });
 
-    let url = "https://dtv-backend.railway.internal:8080/api/home";
+    let url4 = "https://dtv-backend.railway.internal:8080/api/home";
     axios
-      .post(url, {
-        query: message,
-        history: history,
-      })
+      .post(url4)
       .then((res) => {
         const r = res.data;
         alert(r["message"]);
