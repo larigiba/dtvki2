@@ -152,8 +152,29 @@ export default function Home() {
     }
   }, [history]);
 
+  const queryHyChat = () => {
+    axios
+      .post("http://localhost:8080/api/home", {
+        query: message,
+        history: history,
+      })
+      .then((res) => {
+        const r = res.data;
+        alert(r["message"]);
+        setHistory((oldHistory) => [...oldHistory, r]);
+        setLoading(false);
+        if (r.links) {
+          fetchPdfSources(r.links);
+        }
+      })
+      .catch((err) => {
+        alert(err);
+      });
+  };
+
   return (
     <main className="h-screen bg-white p-6 flex flex-col">
+      <button onClick={queryHyChat}>HyChat</button>
       <div className="flex flex-col absolute left-14 top-[-6rem]">
         <span className="block text-xl text-white font-bold">
           Hilfe-Center mit KI
