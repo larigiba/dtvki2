@@ -153,8 +153,13 @@ export default function Home() {
   }, [history]);
 
   const queryHyChat = () => {
+    // get url based on dev or prod
+    const url =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:8080/api/home"
+        : "http://dtv-backend.railway.internal:8080/api/home";
     axios
-      .post("http://localhost:8080/api/home", {
+      .post(url, {
         query: message,
         history: history,
       })
