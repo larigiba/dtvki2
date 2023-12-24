@@ -156,8 +156,8 @@ export default function Home() {
     // get url based on dev or prod
     const url =
       process.env.NODE_ENV === "development"
-        ? "http://localhost:8080/api/home"
-        : "http://dtv-backend.railway.internal:8080/api/home";
+        ? "https://localhost:8080/api/home"
+        : "https://dtv-backend.railway.internal:8080/api/home";
     axios
       .post(url, {
         query: message,
