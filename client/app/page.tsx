@@ -9,7 +9,7 @@ import PDFViewer from "@/components/PdfViewer";
 import axios from "axios";
 import { useMap } from "@/components/useMap";
 import useAutosizeTextArea from "@/components/useAutosizeTextArea";
-import "/gradient.css";
+import ".//gradient.css";
 
 export default function Home() {
   const [message, setMessage] = useState<string>("");
@@ -212,7 +212,7 @@ export default function Home() {
           Hilfe-Center mit KI
         </span>
       </div>
-      <div className="h-screen bg-white flex flex-row gap-1 gradientbg">
+      <div className="h-screen bg-white flex flex-row gap-1 rounded-xl gradientbg">
         <div className="flex flex-col gap-4 w-full items-center h-full max-h-full">
           <span style={{ position: "absolute", bottom: "2em", right: "2em" }}>
             <Datev size="100" color="white" />
