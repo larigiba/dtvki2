@@ -9,6 +9,7 @@ import PDFViewer from "@/components/PdfViewer";
 import axios from "axios";
 import { useMap } from "@/components/useMap";
 import useAutosizeTextArea from "@/components/useAutosizeTextArea";
+import "/gradient.css";
 
 export default function Home() {
   const [message, setMessage] = useState<string>("");
@@ -154,10 +155,11 @@ export default function Home() {
 
   const queryHyChat = () => {
     // get url based on dev or prod
-    const url =
-      process.env.NODE_ENV === "development"
-        ? "https://localhost:8080/api/home"
-        : "https://dtv-backend.railway.internal:8080/api/home";
+    // const url =
+    //   process.env.NODE_ENV === "development"
+    //     ? "https://localhost:8080/api/home"
+    //     : "https://dtv-backend.railway.internal/api/home";
+    let url = "https://dtv-backend.railway.internal/api/home";
     axios
       .post(url, {
         query: message,
@@ -166,11 +168,48 @@ export default function Home() {
       .then((res) => {
         const r = res.data;
         alert(r["message"]);
-        setHistory((oldHistory) => [...oldHistory, r]);
-        setLoading(false);
-        if (r.links) {
-          fetchPdfSources(r.links);
-        }
+      })
+      .catch((err) => {
+        alert(err);
+      });
+
+    let url = "https://dtv-backend-production.up.railway.app/api/home";
+    axios
+      .post(url, {
+        query: message,
+        history: history,
+      })
+      .then((res) => {
+        const r = res.data;
+        alert(r["message"]);
+      })
+      .catch((err) => {
+        alert(err);
+      });
+
+    let url = "https://dtv-backend-production.up.railway.app:8080/api/home";
+    axios
+      .post(url, {
+        query: message,
+        history: history,
+      })
+      .then((res) => {
+        const r = res.data;
+        alert(r["message"]);
+      })
+      .catch((err) => {
+        alert(err);
+      });
+
+    let url = "https://dtv-backend.railway.internal:8080/api/home";
+    axios
+      .post(url, {
+        query: message,
+        history: history,
+      })
+      .then((res) => {
+        const r = res.data;
+        alert(r["message"]);
       })
       .catch((err) => {
         alert(err);
@@ -185,7 +224,7 @@ export default function Home() {
           Hilfe-Center mit KI
         </span>
       </div>
-      <div className="h-screen bg-white flex flex-row gap-1 bg-[url('/images/datev_bg.png')] bg-cover">
+      <div className="h-screen bg-white flex flex-row gap-1 gradientbg">
         <div className="flex flex-col gap-4 w-full items-center h-full max-h-full">
           <span style={{ position: "absolute", bottom: "2em", right: "2em" }}>
             <Datev size="100" color="white" />
