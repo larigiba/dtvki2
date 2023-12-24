@@ -159,7 +159,7 @@ export default function Home() {
     //   process.env.NODE_ENV === "development"
     //     ? "https://localhost:8080/api/home"
     //     : "https://dtv-backend.railway.internal/api/home";
-    let url1 = "https://dtv-backend.railway.internal/api/home";
+    let url1 = "http://dtv-backend.railway.internal/api/home";
     axios
       .post(url1)
       .then((res) => {
@@ -167,7 +167,18 @@ export default function Home() {
         alert(r["message"]);
       })
       .catch((err) => {
-        alert(err);
+        alert(url1 + err);
+      });
+
+    let url4 = "http://dtv-backend.railway.internal:8080/api/home";
+    axios
+      .post(url4)
+      .then((res) => {
+        const r = res.data;
+        alert(r["message"]);
+      })
+      .catch((err) => {
+        alert(url4 + err);
       });
 
     let url2 = "https://dtv-backend-production.up.railway.app/api/home";
@@ -178,7 +189,7 @@ export default function Home() {
         alert(r["message"]);
       })
       .catch((err) => {
-        alert(err);
+        alert(url2 + err);
       });
 
     let url3 = "https://dtv-backend-production.up.railway.app:8080/api/home";
@@ -189,18 +200,7 @@ export default function Home() {
         alert(r["message"]);
       })
       .catch((err) => {
-        alert(err);
-      });
-
-    let url4 = "https://dtv-backend.railway.internal:8080/api/home";
-    axios
-      .post(url4)
-      .then((res) => {
-        const r = res.data;
-        alert(r["message"]);
-      })
-      .catch((err) => {
-        alert(err);
+        alert(url3 + err);
       });
   };
 
