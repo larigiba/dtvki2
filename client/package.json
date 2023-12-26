@@ -11,7 +11,6 @@
   "dependencies": {
     "@pinecone-database/pinecone": "^0.1.6",
     "@react-pdf/renderer": "^3.1.14",
-    "@types/node": "20.4.10",
     "@types/react": "18.2.20",
     "@types/react-dom": "18.2.7",
     "autoprefixer": "10.4.14",
@@ -30,10 +29,12 @@
     "react-pdf": "^5.3.2",
     "supports-color": "^8.1.1",
     "tailwind-scrollbar-hide": "^1.1.7",
-    "tailwindcss": "3.3.3",
-    "typescript": "5.1.6"
+    "tailwindcss": "3.3.3"
   },
   "devDependencies": {
-    "encoding": "^0.1.13"
+    "@types/node": "^20.10.5",
+    "encoding": "^0.1.13",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   }
 }

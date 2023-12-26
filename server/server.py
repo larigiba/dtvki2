@@ -1,3 +1,4 @@
+import os
 import re
 from flask import Flask, jsonify, send_file
 from flask_cors import CORS
@@ -12,6 +13,7 @@ CORS(app)
 # global variables
 QA_CHAIN, QA_MEMORY = None, None
 page_numbers_store = {}
+curr_doc_number = 0
 
 
 # routes
@@ -37,49 +39,33 @@ def query_chain(question):
         source["page_content"] = s.page_content
         source["title"] = s.metadata["title"]
         source["source"] = s.metadata["source"]
+        source["date"] = s.metadata["date"]
         sources.append(source)
 
     return answer, sources
 
 
 # /api/hychat
-@app.route("/api/hychat", methods=["POST", "GET"])
-def qa():
+@app.route("/api/hychat", methods=["POST"])
+def qa(request):
     # get data from request body
-    # question = request.json["question"]
+    question = request.json["question"]
 
     # make query
-    result = query_chain(
-        "Wie rechne ich die Energiepreispauschale in Lohn und Gehalt ab?"
-    )
+    result = query_chain(question)
 
     # return result
     return jsonify(result)
 
 
-# test individually first, then integrate into routine
-# so this is actually better!
-# yesss
-@app.route("/api/pdfetch", methods=["GET"])
-def fetch_pdf():
-    # data = request.json
-    # url = data.get("url")
-    # text_chunks = data.get("text_chunks", [])
+@app.route("/api/pdfetch", methods=["POST"])
+def fetch_pdf(request):
+    data = request.json
+    url = data.get("url")
 
-    url = "https://www.datev.de/dnlexom/help-center/v1/documents/1024621/pdf"
-    text_chunks = [
-        "2.2 Lohnart einfügen\nDie Energiepreispauschale wird als sonstiger Bezug versteuert und ist beitragsfrei in der Sozialversicherung. \nLohnart für die Energiepreispauschale einfügen\nVorgehen:\n1Mandaten in Lohn und Gehalt öffnen.\n2Mandantendaten | Anpassung Lohnarten | Assistent Lohnarten wählen.\n3DATEV-Standardlohnarten einfügen wählen und auf Weiter klicken.\n4Lohnart 5800 Energiepreispauschale wählen, nach Ausgewählte Lohnarten übernehmen und auf Weiter \nklicken",
-        """Damit die Energiepreispauschale nicht automatisch ausgezahlt wird, müssen Sie die Vorbelegungen 
-prüfen und ändern. Sie haben hierfür 2 Möglichkeiten:
-▪Mandanten in Lohn und Gehalt öffnen: Mandantendaten | Steuer | Allgemeine Daten, Registerkarte 
-Lohnsteuer-Anmeldung wählen. Im Feld Auszahlung Energiepreispauschale für Monat Eintrag Keine 
-Auszahlung wählen.
-- Oder -
-▪Mitarbeiter in Lohn und Gehalt öffnen: Stammdaten | Steuer | Besonderheiten, Registerkarte Sonstige 
-Angaben wählen.""",
-    ]
-
-    output_pdf, pages_with_text = pdfetch_highlighted(url, text_chunks)
+    output_pdf, pages_with_text = pdfetch_highlighted(
+        url, []
+    )  # debug for now, since no highlighting
 
     page_numbers_store[url] = pages_with_text
 
@@ -89,11 +75,11 @@ Angaben wählen.""",
     )
 
 
-@app.route("/api/pdfetch-highlights", methods=["GET"])
-def get_page_numbers():
-    # data = request.json
-    # url = data.get('url')
-    url = "https://www.datev.de/dnlexom/help-center/v1/documents/1024621/pdf"
+@app.route("/api/pdfetch-highlights", methods=["POST"])
+def get_page_numbers(request):
+    data = request.json
+    document_id = request.json["documentId"]
+    url = f"https://www.datev.de/dnlexom/help-center/v1/documents/{document_id}/pdf"
 
     if url in page_numbers_store:
         return jsonify(page_numbers_store[url]), 200
@@ -101,10 +87,11 @@ def get_page_numbers():
         return jsonify({}), 404
 
 
-@app.route("/api/get-tutorial", methods=["GET"])
-def get_click_tutorial_url():
+@app.route("/api/get-tutorial", methods=["POST"])
+def get_click_tutorial_url(request):
     # Define the URL with the document ID
-    document_id = "1024621"  # Replace with your actual document ID
+
+    document_id = request.json["documentId"]
     new_url = f"https://www.datev.de/dnlexom/help-center/v1/documents/{document_id}"
 
     # Perform the HTTP GET request
@@ -141,22 +128,10 @@ def start_server(debug=False):
 
 
 if __name__ == "__main__":
-    # ----- START SERVER -----
-    # get command line argument and see if debug is on
-    # if yes, start server in debug mode
-    # otherwise, start server in production mode
-    # example usage: python server.py debug
     import argparse, sys
 
-    # provide three arguments with argv:
-    # openai api key
-    # pinecone api key
-    # pinecone environment
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--openai-api-key", help="The OPENAI API key", default=None)
-    parser.add_argument("--pinecone-api-key", help="The Pinecone API key", default=None)
-    parser.add_argument("--pinecone-env", help="The Pinecone environment", default=None)
     parser.add_argument(
         "-debug", help="Whether to run the server in debug mode", action="store_true"
     )
@@ -165,13 +140,18 @@ if __name__ == "__main__":
 
     print(args)
 
-    openai_key = None
-    pinecone_api_key = None
-    pinecone_environment = None
     debug = False
 
-    if args.openai_api_key and args.pinecone_api_key and args.pinecone_env:
-        init_env(args.openai_api_key, args.pinecone_api_key, args.pinecone_env)
+    if (
+        os.environ["OPENAI_API_KEY"]
+        and os.environ["PINECONE_API_KEY"]
+        and os.environ["PINECONE_ENV"]
+    ):
+        init_env(
+            os.environ["OPENAI_API_KEY"],
+            os.environ["PINECONE_API_KEY"],
+            os.environ["PINECONE_ENV"],
+        )
     else:
         print("Running in development mode. Fetching keys from SECRETS")
         try:

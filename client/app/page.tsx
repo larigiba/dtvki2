@@ -1,7 +1,15 @@
 "use client";
 import { useState, useRef, useEffect, ReactElement, use } from "react";
 import { Message } from "@/types/message";
-import { Send, X, ExternalLink, ThumbsUp, ThumbsDown } from "react-feather";
+import {
+  Send,
+  X,
+  ExternalLink,
+  ThumbsUp,
+  ThumbsDown,
+  MousePointer,
+  FileText,
+} from "react-feather";
 import LoadingDots from "@/components/LoadingDots";
 import ResizeableTextArea from "@/components/ResizeableTextArea";
 import Datev from "@/components/DatevLogo";
@@ -28,6 +36,12 @@ export default function Home() {
   const [currOpenSource, setCurrOpenSource] = useState<string>("");
   const [sourceOpen, setSourceOpen] = useState<boolean>(false);
 
+  const getServerURL = () => {
+    return process.env.NODE_ENV === "development"
+      ? "http://localhost:8080"
+      : "http://dtv-backend-production.up.railway.app";
+  };
+
   const handleClick = (): void => {
     if (
       (!outputExpanded && message == "") ||
@@ -45,7 +59,6 @@ export default function Home() {
     // wait 1 sec
     setOutputExpanded(true);
 
-    // context ist ein text der der ki erklärt wer sie ist
     // NEW
 
     queryHyChat(outputExpanded ? bottomMessage : message).then(async (r) => {
@@ -53,10 +66,10 @@ export default function Home() {
       const filteredLinks = links.filter(
         (item, index) => links.indexOf(item) === index
       );
-      fetchClickTutorials(filteredLinks).then((tutorialLinks) => {
+      getClickTutorialLinks(filteredLinks).then((tutorialLinks) => {
         const newMessage: Message = {
           role: "assistant",
-          content: r[0], //.split("\n").join("<br/>"),
+          content: r[0],
           links: filteredLinks,
           titles: r[1].map((s) => s.title),
           tutorialLinks: tutorialLinks,
@@ -64,88 +77,29 @@ export default function Home() {
         setHistory((oldHistory) => [...oldHistory, newMessage]);
         setLoading(false);
         if (newMessage.links) {
-          //fetchPdfSources(newMessage.links);
           fetchPdfAndPageNumbers(filteredLinks);
         }
-        console.log("R FINISHED");
       });
     });
-
-    // OLD2
-    // const r: Message = {
-    //   role: "assistant",
-    //   content: `Bei der Altersvorsorge gibt es verschiedene wichtige Aspekte, die berücksichtigt werden sollten. Die Deutsche
-    //     Rentenversicherung erklärt die Altersvorsorge anhand der "Drei Säulen der Altersvorsorge", die aus der gesetzlichen
-    //     Rentenversicherung, der betrieblichen Altersvorsorge und der privaten Vorsorge besteht. Die betriebliche
-    //     Altersvorsorge (bAV) wird über den Arbeitgeber aufgebaut und ist gesetzlich vorgeschrieben. Die private
-    //     Altersvorsorge umfasst verschiedene Strategien zur langfristigen Vermögensbildung, wie Wertpapiere, Fonds,
-    //     Immobilien und Versicherungen. Zudem gibt es staatlich geförderte Möglichkeiten zur Vorsorge im Alter, wie
-    //     die Riester-Rente und die betriebliche Altersvorsorge. Es ist wichtig, die individuelle Lebenssituation, das Alter
-    //     und die Risikobereitschaft bei der Auswahl der Altersvorsorge zu berücksichtigen. Die Altersvorsorge ist
-    //     entscheidend, da die gesetzliche Rente oft nicht ausreicht, um den finanziellen Bedarf im Alter zu decken.`,
-    //   links: [
-    //     "https://apps.datev.de/help-center/documents/1031656",
-    //     "https://apps.datev.de/help-center/documents/1034821",
-    //   ],
-    // };
-    // setTimeout(() => {
-    //   setHistory((oldHistory) => [...oldHistory, r]);
-    //   setLoading(false);
-    //   if (r.links) {
-    //     fetchPdfSources(r.links);
-    //   }
-    // }, 1000);
-
-    // OLD1
-    // fetch("/api/chat", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ query: message, history: history }),
-    // })
-    //   .then(async (res) => {
-    //     const r = await res.json();
-    //     setHistory((oldHistory) => [...oldHistory, r]);
-    //     setLoading(false);
-    //   })
-    //   .catch((err) => {
-    //     alert(err);
-    //   });
   };
 
-  const fetchClickTutorials = async (links: string[]) => {
-    // fetch html from here https://www.datev.de/dnlexom/help-center/v1/documents/1034821
-    // then find the link to the tutorial with regex
-    // then store in some state
-    // then open in new tab
+  const getClickTutorialLinks = async (links: string[]) => {
     let tutorialLinks: string[] = [];
 
     for (const link of links) {
       const documentId = link.split("/").pop();
-      const url =
-        process.env.NODE_ENV === "development"
-          ? "http://localhost:8080/api/get-tutorial"
-          : "http://dtv-backend-production.up.railway.app/api/get-tutorial";
-      // await axios reply
-      const tutorialUrlResponse = await axios.get(url);
+      const url = getServerURL() + "/api/get-tutorial";
+      const tutorialUrlResponse = await axios.post(url, {
+        documentId: documentId,
+      });
       if (tutorialUrlResponse.data) {
         const tutorialUrl = tutorialUrlResponse.data.url;
         tutorialLinks.push(tutorialUrl);
+      } else {
+        tutorialLinks.push("");
       }
     }
     return tutorialLinks;
-  };
-
-  const formatPageName = (url: string) => {
-    // Split the URL by "/" and get the last segment
-    const pageName = url.split("/").pop();
-
-    // Split by "-" and then join with space
-    if (pageName) {
-      const formattedName = pageName.split("-").join(" ");
-
-      // Capitalize only the first letter of the entire string
-      return formattedName.charAt(0).toUpperCase() + formattedName.slice(1);
-    }
   };
 
   const fetchPdfAndPageNumbers = async (links: string[]) => {
@@ -154,70 +108,30 @@ export default function Home() {
       const newUrl = `https://www.datev.de/dnlexom/help-center/v1/documents/${documentId}/pdf`;
 
       try {
-        // Fetch the modified PDF
-        const url =
-          process.env.NODE_ENV === "development"
-            ? "http://localhost:8080/api/pdfetch"
-            : "http://dtv-backend-production.up.railway.app/api/pdfetch";
-        // await axios reply
-        const pdfResponse = await axios.get(url, {
-          responseType: "blob", // important for receiving the PDF file
-        });
+        const pdfetchUrl = getServerURL() + "/api/pdfetch";
+        const pdfResponse = await axios.post(
+          pdfetchUrl,
+          {
+            url: newUrl,
+          },
+          {
+            responseType: "blob",
+          }
+        );
 
         const pdfBlob = pdfResponse.data;
         const pdfUrl = URL.createObjectURL(pdfBlob);
         sourceToPdf.current.set(link, pdfUrl);
 
         // Fetch the page numbers
-        const urlh =
-          process.env.NODE_ENV === "development"
-            ? "http://localhost:8080/api/pdfetch-highlights"
-            : "http://dtv-backend-production.up.railway.app/api/pdfetch-highlights";
-        const pageNumberResponse = await axios.get(urlh);
-
-        const pageNumbers = pageNumberResponse.data;
-
-        console.log("pageNumbers: %o", pageNumbers);
-
-        //return { pdfUrl, pageNumbers };
+        //const pdfetchHighlightsUrl = getServerURL() + "/api/pdfetch-highlights";
+        //const pageNumberResponse = await axios.get(pdfetchHighlightsUrl);
       } catch (error) {
         console.error("Error fetching PDF:", error);
         throw error;
       }
     });
   };
-
-  // const fetchPdfSources = (links: string[]) => {
-  //   links.forEach((link) => {
-  //     const documentId = link.split("/").pop();
-  //     const newUrl = `https://www.datev.de/dnlexom/help-center/v1/documents/${documentId}/pdf`;
-
-  //     const url =
-  //       process.env.NODE_ENV === "development"
-  //         ? "http://localhost:8080/api/pdfetch"
-  //         : "http://dtv-backend-production.up.railway.app/api/pdfetch";
-  //     // await axios reply
-
-  //     fetch(url, {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/pdf" },
-  //       body: JSON.stringify({ url: newUrl }),
-  //     })
-  //       .then((response) => response.json())
-  //       .then((data) => {
-  //         const blob = new Blob(
-  //           [Uint8Array.from(atob(data.pdfData), (c) => c.charCodeAt(0))],
-  //           { type: "application/pdf" }
-  //         );
-  //         const pdfUrl = URL.createObjectURL(blob);
-
-  //         sourceToPdf.current.set(link, pdfUrl);
-  //       })
-  //       .catch((err) => {
-  //         alert(err);
-  //       });
-  //   });
-  // };
 
   const openTab = (url: string, numRetries: number = 0) => {
     // try getting the pdf url from the map, if not yet available, retry
@@ -247,55 +161,16 @@ export default function Home() {
   useAutosizeTextArea(textAreaRef.current, message);
   useAutosizeTextArea(bottomTextAreaRef.current, bottomMessage);
 
-  //scroll to bottom of chat
   useEffect(() => {
-    //window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
     if (chatOutputRef.current) {
       chatOutputRef.current.scrollTo({
         top: chatOutputRef.current.scrollHeight,
         behavior: "smooth",
       });
-      // chatOutputRef.current.scrollIntoView({
-      //   behavior: "smooth",
-      //   block: "end",
-      // });
     }
   }, [history]);
 
-  const testQuery = () => {
-    // query api/home
-    let url1 = "http://localhost:8080/api/home";
-    axios
-      .post(url1)
-      .then((res) => {
-        const r = res.data;
-        alert(r["message"]);
-      })
-      .catch((err) => {
-        alert(url1 + err);
-      });
-  };
-
-  const testQuery2 = () => {
-    // query api/home
-    let url1 = "http://localhost:8080/api/hychat";
-    axios
-      .post(url1, {
-        question: "Wie kann ich meine Steuererklärung machen?",
-      })
-      .then((res) => {
-        const r = res.data;
-        alert(r["message"]);
-      })
-      .catch((err) => {
-        alert(url1 + err);
-      });
-  };
-
-  async function queryHyChat(question: string) {
-    // return hardcoded promise for now
-    // with this content
-
+  const debugHyChat = () => {
     const promise = new Promise((resolve, reject) => {
       const arrayOfStrings = [
         'Die Energiepreispauschale wird in der Lohn- und Gehaltsabrechnung als sonstiger Bezug versteuert und ist beitragsfrei in der Sozialversicherung. Um die Energiepreispauschale in der Lohn- und Gehaltsabrechnung zu ber\u00fccksichtigen, sollten Sie wie folgt vorgehen:\n\n1. \u00d6ffnen Sie den Mandanten in der Software "Lohn und Gehalt".\n2. Gehen Sie zu "Mandantendaten" und w\u00e4hlen Sie "Anpassung Lohnarten" aus.\n3. W\u00e4hlen Sie den Assistenten f\u00fcr Lohnarten aus.\n4. W\u00e4hlen Sie die Option "DATEV-Standardlohnarten einf\u00fcgen" und klicken Sie auf "Weiter".\n5. W\u00e4hlen Sie die Lohnart "5800 Energiepreispauschale" aus und klicken Sie auf "Weiter".\n6. \u00dcbernehmen Sie die ausgew\u00e4hlten Lohnarten und klicken Sie erneut auf "Weiter".\n\nUm sicherzustellen, dass die Energiepreispauschale nicht automatisch ausgezahlt wird, gibt es zwei M\u00f6glichkeiten:\n\n1. \u00d6ffnen Sie den Mandanten und gehen Sie zu "Mandantendaten". W\u00e4hlen Sie dann "Steuer" und "Allgemeine Daten" aus. Gehen Sie zur Registerkarte "Lohnsteuer-Anmeldung" und w\u00e4hlen Sie im Feld "Auszahlung Energiepreispauschale f\u00fcr Monat" die Option "Keine Auszahlung" aus.\n2. Alternativ k\u00f6nnen Sie auch den Mitarbeiter \u00f6ffnen. Gehen Sie zu "Stammdaten", dann zu "Steuer" und w\u00e4hlen Sie "Besonderheiten" aus. W\u00e4hlen Sie die Registerkarte "Sonstige Angaben" aus.\n\nBitte beachten Sie, dass dies allgemeine Schritte sind und je nach Softwareprogramm geringf\u00fcgige Abweichungen auftreten k\u00f6nnen. Es wird empfohlen, die spezifische Dokumentation oder Hilfe der verwendeten Software zu konsultieren, wenn Sie weitere Unterst\u00fctzung ben\u00f6tigen.',
@@ -318,19 +193,18 @@ export default function Home() {
         resolve(arrayOfStrings);
       }, 10);
     });
-
     return promise;
+  };
 
-    // actual code, above is for debugging only
+  async function queryHyChat(question: string) {
+    // NOTE: this is for debugging only
+    //return debugHyChat();
 
     // get url based on dev or prod
-    const url =
-      process.env.NODE_ENV === "development"
-        ? "http://localhost:8080/api/hychat"
-        : "http://dtv-backend-production.up.railway.app/api/hychat";
+    const hychatUrl = getServerURL() + "/api/hychat";
     // await axios reply
     try {
-      const res = await axios.post(url, {
+      const res = await axios.post(hychatUrl, {
         question: question,
       });
       const r = res.data;
@@ -339,55 +213,10 @@ export default function Home() {
       alert(err);
       return null;
     }
-    // let url1 = "http://dtv-backend.railway.internal/api/home";
-    // axios
-    //   .post(url1)
-    //   .then((res) => {
-    //     const r = res.data;
-    //     alert(r["message"]);
-    //   })
-    //   .catch((err) => {
-    //     alert(url1 + err);
-    //   });
-
-    // let url4 = "http://dtv-backend.railway.internal:8080/api/home";
-    // axios
-    //   .post(url4)
-    //   .then((res) => {
-    //     const r = res.data;
-    //     alert(r["message"]);
-    //   })
-    //   .catch((err) => {
-    //     alert(url4 + err);
-    //   });
-
-    // let url2 = "https://dtv-backend-production.up.railway.app/api/home";
-    // axios
-    //   .post(url2)
-    //   .then((res) => {
-    //     const r = res.data;
-    //     alert(r["message"]);
-    //   })
-    //   .catch((err) => {
-    //     alert(url2 + err);
-    //   });
-
-    // let url3 = "https://dtv-backend-production.up.railway.app:8080/api/home";
-    // axios
-    //   .post(url3)
-    //   .then((res) => {
-    //     const r = res.data;
-    //     alert(r["message"]);
-    //   })
-    //   .catch((err) => {
-    //     alert(url3 + err);
-    //   });
   }
 
   return (
     <main className="h-screen p-2 bg-white flex flex-col overflow-hidden">
-      {/* <button onClick={testQuery}>Test Query</button>
-      <button onClick={testQuery2}>Test HyChat</button> */}
       <div className="flex flex-col absolute left-14 top-[-6rem]">
         <span className="block text-xl text-white font-bold">
           Hilfe-Center mit KI
@@ -489,30 +318,43 @@ export default function Home() {
 
                               {message.links?.map((link, idx) => {
                                 return (
-                                  <span
-                                    onClick={() => openTab(link)}
-                                    key={link}
-                                    className="block w-fit font-bold text-center px-3 py-2 text-sm  text-green-800 bg-green-100 rounded"
-                                  >
-                                    {
-                                      `${link.split("/").pop()}: ${
-                                        message.titles[idx]
-                                      }` /* {`${idx}:  ${formatPageName(link)}`} */
-                                    }
-                                  </span>
-                                );
-                              })}
-
-                              {message.tutorialLinks?.map((link) => {
-                                return (
-                                  <a
-                                    href={link}
-                                    target="_blank"
-                                    key={link}
-                                    className="block w-fit font-bold text-center px-3 py-2 text-sm  text-green-800 bg-green-100 rounded"
-                                  >
-                                    {`Klick-Tutorial öffnen`}
-                                  </a>
+                                  <div className="flex flex-col gap-2 justify-center items-center relative bg-green-200 rounded-lg p-3 shadow-sm">
+                                    <span className="block relative w-full text-sm text-slate-800 font-bold text-center">
+                                      {
+                                        `${link.split("/").pop()}: ${
+                                          message.titles[idx]
+                                        }` /* {`${idx}:  ${formatPageName(link)}`} */
+                                      }
+                                    </span>
+                                    <span
+                                      key={idx}
+                                      className="flex flex-row gap-3 w-full relative"
+                                    >
+                                      {message.tutorialLinks[idx] != "" && (
+                                        <a
+                                          href={link}
+                                          target="_blank"
+                                          key={link}
+                                          className="flex gap-2 justify-between w-fit font-bold text-center px-3 py-2 text-sm  text-green-800 bg-green-100 hover:underline rounded-lg shadow-md hover:translate-y-[-0.2rem] transition-all hover:shadow-lg"
+                                        >
+                                          <MousePointer className="w-6 h-6 text-green-500" />
+                                          Klick-Tutorial öffnen
+                                        </a>
+                                      )}
+                                      <a
+                                        href={""}
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          openTab(link);
+                                        }}
+                                        key={link}
+                                        className="flex gap-2 justify-center w-fit font-bold text-center px-3 py-2 text-sm text-green-800 bg-green-100 hover:underline rounded-lg shadow-md hover:translate-y-[-0.2rem] transition-all hover:shadow-lg"
+                                      >
+                                        <FileText className="w-6 h-6 text-green-500" />
+                                        Dokument hier öffnen
+                                      </a>
+                                    </span>
+                                  </div>
                                 );
                               })}
                             </div>
