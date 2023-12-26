@@ -39,7 +39,7 @@ export default function Home() {
   const getServerURL = () => {
     return process.env.NODE_ENV === "development"
       ? "http://localhost:8080"
-      : "http://dtv-backend-production.up.railway.app";
+      : "https://dtv-backend-production.up.railway.app";
   };
 
   const handleClick = (): void => {
