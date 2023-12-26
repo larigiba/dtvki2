@@ -62,16 +62,16 @@ export default function Home() {
     // NEW
 
     queryHyChat(outputExpanded ? bottomMessage : message).then(async (r) => {
-      const links = r[1].map((s) => s.source);
+      const links = r[1].map((s: { source: any }) => s.source);
       const filteredLinks = links.filter(
-        (item, index) => links.indexOf(item) === index
+        (item: any, index: any) => links.indexOf(item) === index
       );
       getClickTutorialLinks(filteredLinks).then((tutorialLinks) => {
         const newMessage: Message = {
           role: "assistant",
           content: r[0],
           links: filteredLinks,
-          titles: r[1].map((s) => s.title),
+          titles: r[1].map((s: { title: any }) => s.title),
           tutorialLinks: tutorialLinks,
         };
         setHistory((oldHistory) => [...oldHistory, newMessage]);
@@ -322,7 +322,7 @@ export default function Home() {
                                     <span className="block relative w-full text-sm text-slate-800 font-bold text-center">
                                       {
                                         `${link.split("/").pop()}: ${
-                                          message.titles[idx]
+                                          message.titles && message.titles[idx]
                                         }` /* {`${idx}:  ${formatPageName(link)}`} */
                                       }
                                     </span>
@@ -330,17 +330,18 @@ export default function Home() {
                                       key={idx}
                                       className="flex flex-row gap-3 w-full relative"
                                     >
-                                      {message.tutorialLinks[idx] != "" && (
-                                        <a
-                                          href={link}
-                                          target="_blank"
-                                          key={link}
-                                          className="flex gap-2 justify-between w-fit font-bold text-center px-3 py-2 text-sm  text-green-800 bg-green-100 hover:underline rounded-lg shadow-md hover:translate-y-[-0.2rem] transition-all hover:shadow-lg"
-                                        >
-                                          <MousePointer className="w-6 h-6 text-green-500" />
-                                          Klick-Tutorial öffnen
-                                        </a>
-                                      )}
+                                      {message.tutorialLinks &&
+                                        message.tutorialLinks[idx] !== "" && (
+                                          <a
+                                            href={link}
+                                            target="_blank"
+                                            key={link}
+                                            className="flex gap-2 justify-between w-fit font-bold text-center px-3 py-2 text-sm  text-green-800 bg-green-100 hover:underline rounded-lg shadow-md hover:translate-y-[-0.2rem] transition-all hover:shadow-lg"
+                                          >
+                                            <MousePointer className="w-6 h-6 text-green-500" />
+                                            Klick-Tutorial öffnen
+                                          </a>
+                                        )}
                                       <a
                                         href={""}
                                         onClick={(e) => {
