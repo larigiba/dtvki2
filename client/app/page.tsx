@@ -359,7 +359,7 @@ export default function Home() {
                                           </TooltipProvider>
                                         </span>
                                       )}
-                                      <span className="block relative grow w-80 text-sm text-slate-800 font-bold text-center">
+                                      <span className="block relative grow w-80 text-sm text-slate-800 shadow-sm font-bold text-center">
                                         {
                                           `${link.split("/").pop()}: ${
                                             message.titles &&
