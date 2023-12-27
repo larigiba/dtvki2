@@ -1,6 +1,6 @@
 # API Keys
 SECRETS.txt
-dbtest.py
+DBSECRETS.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

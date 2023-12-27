@@ -9,6 +9,8 @@ import {
   ThumbsDown,
   MousePointer,
   FileText,
+  PlusCircle,
+  MinusCircle,
 } from "react-feather";
 import LoadingDots from "@/components/LoadingDots";
 import ResizeableTextArea from "@/components/ResizeableTextArea";
@@ -18,6 +20,12 @@ import axios from "axios";
 import { useMap } from "@/components/useMap";
 import useAutosizeTextArea from "@/components/useAutosizeTextArea";
 import ".//gradient.css";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function Home() {
   const [message, setMessage] = useState<string>("");
@@ -63,21 +71,19 @@ export default function Home() {
 
     queryHyChat(outputExpanded ? bottomMessage : message).then(async (r) => {
       const links = r[1].map((s: { source: any }) => s.source);
-      const filteredLinks = links.filter(
-        (item: any, index: any) => links.indexOf(item) === index
-      );
-      getClickTutorialLinks(filteredLinks).then((tutorialLinks) => {
+      getClickTutorialLinks(links).then((tutorialLinks) => {
         const newMessage: Message = {
           role: "assistant",
           content: r[0],
-          links: filteredLinks,
+          links: links,
           titles: r[1].map((s: { title: any }) => s.title),
+          relevances: r[1].map((s: { relevance: any }) => s.relevance),
           tutorialLinks: tutorialLinks,
         };
         setHistory((oldHistory) => [...oldHistory, newMessage]);
         setLoading(false);
         if (newMessage.links) {
-          fetchPdfAndPageNumbers(filteredLinks);
+          fetchPdfAndPageNumbers(links);
         }
       });
     });
@@ -92,7 +98,7 @@ export default function Home() {
       const tutorialUrlResponse = await axios.post(url, {
         documentId: documentId,
       });
-      if (tutorialUrlResponse.data) {
+      if (tutorialUrlResponse.data && tutorialUrlResponse.data.url != "") {
         const tutorialUrl = tutorialUrlResponse.data.url;
         tutorialLinks.push(tutorialUrl);
       } else {
@@ -113,6 +119,7 @@ export default function Home() {
           pdfetchUrl,
           {
             url: newUrl,
+            documentId: documentId,
           },
           {
             responseType: "blob",
@@ -286,9 +293,9 @@ export default function Home() {
             <div
               id="chat-output"
               ref={chatOutputRef}
-              className={`relative rounded-t-2xl rounded-b-lg border-green-700 border-opacity-5 overflow-y-scroll transition-all duration-500 z-0 border w-full max-h-full ${
+              className={`relative rounded-t-2xl rounded-b-lg border-green-700 border-opacity-5 overflow-y-auto transition-all duration-500 z-0 border w-full max-h-full ${
                 outputExpanded
-                  ? "max-h-full h-full gap-4 pb-6 pt-6 pl-4 [&>*:nth-last-child(2)]:mb-4"
+                  ? "max-h-full h-full gap-4 pb-6 pt-6 pl-4 [&>*:nth-last-child(2)]:mb-4 overflow-x-auto"
                   : "max-h-0 p-0"
               } flex flex-col overflow-clip`}
               onSubmit={(e) => {
@@ -306,29 +313,64 @@ export default function Home() {
                         key={idx}
                         className="flex gap-2"
                       >
-                        <div className="bg-gradient-to-r from-green-400 to-green-700 text-white font-bold relative w-16 h-14 bg-purple-100 rounded-full flex justify-center items-center text-center p-5 shadow-xl">
+                        <div className="bg-gradient-to-r from-green-400 to-green-700 text-white font-bold relative w-14 h-14 bg-purple-100 rounded-full flex justify-center items-center text-center p-5 shadow-xl">
                           KI
                         </div>
                         <div className="w-auto mr-6 break-words bg-white rounded-b-xl rounded-tr-xl text-black p-6 shadow-[0_10px_40px_0px_rgba(0,0,0,0.15)]">
                           {message.links && (
-                            <div className="mb-4 flex gap-2">
+                            <div className="mb-4 flex gap-2 flex-wrap">
                               {/* <p className="text-sm font-medium text-slate-500">
                               Sources:
                             </p> */}
 
                               {message.links?.map((link, idx) => {
                                 return (
-                                  <div className="flex flex-col gap-2 justify-center items-center relative bg-green-200 rounded-lg p-3 shadow-sm">
-                                    <span className="block relative w-full text-sm text-slate-800 font-bold text-center">
-                                      {
-                                        `${link.split("/").pop()}: ${
-                                          message.titles && message.titles[idx]
-                                        }` /* {`${idx}:  ${formatPageName(link)}`} */
-                                      }
-                                    </span>
+                                  <div className="flex flex-col gap-4 justify-center items-center relative bg-green-200 rounded-lg p-3 shadow-sm">
+                                    <div className="flex flex-row gap-4 items-center justify-between w-full">
+                                      {message.relevances && (
+                                        <span
+                                          className={`block relative w-fit h-8 p-2 text-sm text-slate-800 rounded-lg ${
+                                            message.relevances[idx] == "high"
+                                              ? "bg-green-400"
+                                              : "bg-gray-300"
+                                          } font-bold text-center`}
+                                        >
+                                          <TooltipProvider>
+                                            <Tooltip>
+                                              <TooltipTrigger>
+                                                {" "}
+                                                {message.relevances &&
+                                                message.relevances[idx] ==
+                                                  "high" ? (
+                                                  <PlusCircle className="w-4 h-4 text-green-800" />
+                                                ) : (
+                                                  <MinusCircle className="w-4 h-4 text-gray-500" />
+                                                )}
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>
+                                                  {message.relevances[idx] ==
+                                                  "high"
+                                                    ? "Hohe Relevanz"
+                                                    : "Mittlere Relevanz"}
+                                                </p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+                                        </span>
+                                      )}
+                                      <span className="block relative grow w-80 text-sm text-slate-800 font-bold text-center">
+                                        {
+                                          `${link.split("/").pop()}: ${
+                                            message.titles &&
+                                            message.titles[idx]
+                                          }` /* {`${idx}:  ${formatPageName(link)}`} */
+                                        }
+                                      </span>
+                                    </div>
                                     <span
                                       key={idx}
-                                      className="flex flex-row gap-3 w-full relative"
+                                      className="flex flex-row gap-3 w-full relative justify-around"
                                     >
                                       {message.tutorialLinks &&
                                         message.tutorialLinks[idx] !== "" && (

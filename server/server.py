@@ -1,9 +1,13 @@
+from collections import defaultdict
+from datetime import datetime
 import os
 import re
+import uuid
 from flask import Flask, jsonify, send_file, request
 from flask_cors import CORS
 from src.hychat import init_env, get_chain
 from src.pdfetch import pdfetch_highlighted
+from src.db import create_new_conversation, insert_message
 import requests
 
 # app instance
@@ -23,8 +27,12 @@ cors = CORS(
 
 # global variables
 QA_CHAIN, QA_MEMORY = None, None
+source_content_store = {}
 page_numbers_store = {}
 curr_doc_number = 0
+conversation_id = None
+sequence_number = 0
+messages = []
 
 
 # routes
@@ -50,20 +58,93 @@ def query_chain(question):
         source["page_content"] = s.page_content
         source["title"] = s.metadata["title"]
         source["source"] = s.metadata["source"]
+        source["description"] = s.metadata["description"]
+        source["related_products"] = s.metadata["related_products"]
+        source["read_duration"] = s.metadata["read_duration"]
+        source["record_id"] = s.metadata["record_id"]
         source["date"] = s.metadata["date"]
+        source["document_id"] = s.metadata["document_number"]
+        source["document_type"] = s.metadata["document_type"]
+        source["score"] = s.metadata["score"]
         sources.append(source)
 
-    return answer, sources
+    # filter docs, remove each with score < 11
+    sources = [s for s in sources if s["score"] > 11]
+    if len(sources) == 0:
+        answer = "Leider konnte für Ihre Anfrage kein relevantes Dokument im DATEV-Hilfe-Center gefunden werden. Sehr gerne helfe ich Ihnen bei einer anderen Anfrage weiter."
+
+    # filter if sources with same doc id appear multiple times
+    doc_to_sources = defaultdict(list)
+    for s in sources:
+        doc_to_sources[s["document_id"]].append(s)
+
+    # get max score for each doc and multiply by factor of chunks found in same doc
+    filtered_sources = []
+    relevance_threshholds = {
+        "high relevance": 13,
+        "medium relevance": 11,
+        "irrelevance": 0,
+    }
+    for docid, curr_sources in doc_to_sources.items():
+        num_highly_relevant_chunks = 0
+        num_medium_relevant_chunks = 0
+        for s in curr_sources:
+            if s["score"] >= relevance_threshholds["high relevance"]:
+                num_highly_relevant_chunks += 1
+            elif s["score"] >= relevance_threshholds["medium relevance"]:
+                num_medium_relevant_chunks += 1
+        if num_highly_relevant_chunks > 1 or num_medium_relevant_chunks > 3:
+            doc_relevance = "high"
+        elif num_medium_relevant_chunks > 1:
+            doc_relevance = "medium"
+        else:
+            doc_relevance = "irrelevant"
+
+        # append chunk with highest relevance for now TODO add all chunks later? for highlighting, or store them
+        doc_with_max_score = max(curr_sources, key=lambda x: x["score"])
+        doc_with_max_score["relevance"] = doc_relevance
+        filtered_sources.append(doc_with_max_score)
+
+    return answer, filtered_sources
 
 
 # /api/hychat
 @app.route("/api/hychat", methods=["POST"])
 def qa():
+    global sequence_number
+    global conversation_id
+    if conversation_id is None:
+        conversation_id = create_new_conversation()
     # get data from request body
     question = request.json["question"]
 
+    insert_message(
+        conversation_id,
+        2,  # id of user zero
+        sequence_number,
+        question,
+        "Human",
+    )
+    sequence_number += 1
+
     # make query
     result = query_chain(question)
+
+    insert_message(
+        conversation_id,
+        1,  # id of user zero
+        sequence_number,
+        result[0],
+        "AI",
+        [s["document_id"] for s in result[1]],
+        [s["title"] for s in result[1]],
+        [s["relevance"] for s in result[1]],
+    )
+    sequence_number += 1
+
+    # for each doc id add to sources store
+    for doc in result[1]:
+        source_content_store[doc["document_id"]] = doc["page_content"]
 
     # return result
     return jsonify(result)
@@ -73,9 +154,27 @@ def qa():
 def fetch_pdf():
     data = request.json
     url = data.get("url")
+    doc_id = data.get("documentId")
+
+    # DEBUG
+    # url = f"https://www.datev.de/dnlexom/help-center/v1/documents/1024621/pdf"
+    # DEBUG_SOURCE_CHUNKS = {
+    #     5: [
+    #         "Ein Arbeitnehmer wird in Lohn und Gehalt neu angelegt. Sie haben hierfür 2 Möglichkeiten:",
+    #         " Minijob während Elternzeit",
+    #     ],
+    #     6: "'2.2 Lohnart einfügen\nDie Energiepreispauschale wird als sonstiger Bezug versteuert und ist beitragsfrei in der Sozialversicherung. \nLohnart für die Energiepreispauschale einfügen\nVorgehen:\n1Mandaten in Lohn und Gehalt öffnen.\n2Mandantendaten | Anpassung Lohnarten | Assistent Lohnarten wählen.\n3DATEV-Standardlohnarten einfügen wählen und auf Weiter klicken.\n4Lohnart 5800 Energiepreispauschale wählen, nach Ausgewählte Lohnarten übernehmen und auf Weiter \nklicken.".split(
+    #         "\n"
+    #     ),
+    #     7: ["2.3 FIBU-Konto für die Energiepreispauschale anlegen\nFür die Erstellu"],
+    # }
+
+    # print("-" * 50)
+    # print("SOURCE CHUNKS\n\n", source_content_store[doc_id])
+    # print("-" * 50)
 
     output_pdf, pages_with_text = pdfetch_highlighted(
-        url, []
+        url, []  # source_content_store[doc_id]
     )  # debug for now, since no highlighting
 
     page_numbers_store[url] = pages_with_text
@@ -88,7 +187,6 @@ def fetch_pdf():
 
 @app.route("/api/pdfetch-highlights", methods=["POST"])
 def get_page_numbers():
-    data = request.json
     document_id = request.json["documentId"]
     url = f"https://www.datev.de/dnlexom/help-center/v1/documents/{document_id}/pdf"
 
@@ -126,7 +224,7 @@ def get_click_tutorial_url():
         print("TUTORIAL URL:", tutorial_url)
         return jsonify({"url": tutorial_url}), 200
     else:
-        return None, 404
+        return "", 200
 
 
 def start_server(debug=False):

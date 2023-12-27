@@ -4,12 +4,15 @@ import pinecone
 from operator import itemgetter
 
 from src.templates import CONDENSE_QUESTION_PROMPT, ANSWER_PROMPT
-from src.utils import FilteredRetriever, combine_documents
+from src.utils import (
+    FilteredRetriever,
+    combine_documents,
+    PineconeHybridSearchRetrieverWithScores,
+)
 
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_core.messages import get_buffer_string
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.retrievers import PineconeHybridSearchRetriever
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import StrOutputParser
 from langchain.memory import ConversationBufferMemory
@@ -57,7 +60,7 @@ def get_chain():
     )
 
     # LangChain Retriever
-    hybridretriever = PineconeHybridSearchRetriever(
+    hybridretriever = PineconeHybridSearchRetrieverWithScores(
         embeddings=embed, sparse_encoder=splade, index=index
     )
 

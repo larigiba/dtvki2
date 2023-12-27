@@ -47,37 +47,41 @@ def pdfetch_highlighted(url, text_chunks):
 
         # pages_with_text = {}
 
-        # for page in pdfIn:
-        #     page_number = page.number + 1  # PyMuPDF page numbers start at 0
-        #     print(page)
+        for page in pdfIn:
+            page_number = page.number + 1  # PyMuPDF page numbers start at 0
+            print(page)
 
-        #     print(text_chunks)
-        #     print([len(chunk) for chunk in text_chunks])
-        #     fixed_text_chunks = []
-        #     for chunk in text_chunks:
-        #         fixed_text_chunks.extend(split_and_combine_text(chunk, 100))
+            if page_number not in text_chunks:
+                continue
+            curr_text_chunks = text_chunks[page_number]
+            print("PAGE NUMBER", page_number, "TEXT CHUNKS", curr_text_chunks)
+            # print(text_chunks)
+            # print([len(chunk) for chunk in text_chunks])
+            # fixed_text_chunks = []
+            # for chunk in text_chunks:
+            #     fixed_text_chunks.extend(split_and_combine_text(chunk, 100))
 
-        #     print(fixed_text_chunks)
-        #     text_instances = [page.search_for(text) for text in fixed_text_chunks]
+            # print(fixed_text_chunks)
+            text_instances = [page.search_for(text) for text in curr_text_chunks]
 
-        #     print("TEXT INSTANCES")
-        #     print(text_instances)
+            print("TEXT INSTANCES")
+            print(text_instances)
 
-        #     for text, instances in zip(text_chunks, text_instances):
-        #         for inst in instances:
-        #             page.add_highlight_annot(inst)
-        #             # Create a named link at the highlight location
-        #             # The link destination can be adjusted as needed
-        #             # link_dest = fitz.Link(page.number, fitz.Point(0, 0))
-        #             # page.insert_link(
-        #             #     link_dest, text=text
-        #             # )  # 'text' will be the link's name
-        #             # print("CUSTOM LINK TEXT", text)
+            for text, instances in zip(text_chunks, text_instances):
+                for inst in instances:
+                    page.add_highlight_annot(inst)
+                    # Create a named link at the highlight location
+                    # The link destination can be adjusted as needed
+                    # link_dest = fitz.Link(page.number, fitz.Point(0, 0))
+                    # page.insert_link(
+                    #     link_dest, text=text
+                    # )  # 'text' will be the link's name
+                    # print("CUSTOM LINK TEXT", text)
 
-        #             if text not in pages_with_text:
-        #                 pages_with_text[text] = []
-        #             if page_number not in pages_with_text[text]:
-        #                 pages_with_text[text].append(page_number)
+                    # if text not in pages_with_text:
+                    #     pages_with_text[text] = []
+                    # if page_number not in pages_with_text[text]:
+                    #     pages_with_text[text].append(page_number)
 
         output_pdf = BytesIO()
         pdfIn.save(output_pdf)

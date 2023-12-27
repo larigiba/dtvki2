@@ -53,7 +53,7 @@ const ResizeableTextArea = forwardRef<
             disabled={isDisabled}
             onChange={(e) => setMessage(e.target.value)}
             placeholder={placeholder}
-            className={`w-full scrollbar-hide min-h-[5rem] h-20 resize-none rounded-md border max-h-[25vh] overflow-scroll bg-white pl-6 pr-24 py-[25px] text-lg font-semibold placeholder:text-slate-400 focus:border-green-500 focus:outline-none focus:ring-4 focus:ring-green-500/10 ${
+            className={`w-full scrollbar-hide min-h-[5rem] h-20 resize-none rounded-md border max-h-[25vh] overflow-y-auto bg-white pl-6 pr-24 py-[25px] text-lg font-semibold placeholder:text-slate-400 focus:border-green-500 focus:outline-none focus:ring-4 focus:ring-green-500/10 ${
               !outputExpanded
                 ? "border-slate-900/10 shadow-[0_10px_40px_0px_rgba(0,0,0,0.15)]"
                 : "border-none"

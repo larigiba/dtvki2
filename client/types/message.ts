@@ -5,4 +5,5 @@ export type Message = {
     titles?: string[]
     docnumbers?: string[]
     tutorialLinks?: string[]
+    relevances?: string[]
 }
