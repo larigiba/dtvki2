@@ -333,7 +333,7 @@ export default function Home() {
                                       {message.tutorialLinks &&
                                         message.tutorialLinks[idx] !== "" && (
                                           <a
-                                            href={link}
+                                            href={message.tutorialLinks[idx]}
                                             target="_blank"
                                             key={link}
                                             className="flex gap-2 justify-between w-fit font-bold text-center px-3 py-2 text-sm  text-green-800 bg-green-100 hover:underline rounded-lg shadow-md hover:translate-y-[-0.2rem] transition-all hover:shadow-lg"

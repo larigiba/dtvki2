@@ -1,6 +1,6 @@
 import os
 import re
-from flask import Flask, jsonify, send_file
+from flask import Flask, jsonify, send_file, request
 from flask_cors import CORS
 from src.hychat import init_env, get_chain
 from src.pdfetch import pdfetch_highlighted
@@ -8,7 +8,18 @@ import requests
 
 # app instance
 app = Flask(__name__)
-CORS(app)
+cors = CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [
+                "http://localhost:*",
+                "https://localhost:*",
+                "https://dtvki2-production.up.railway.app",
+            ]
+        }
+    },
+)
 
 # global variables
 QA_CHAIN, QA_MEMORY = None, None
@@ -47,7 +58,7 @@ def query_chain(question):
 
 # /api/hychat
 @app.route("/api/hychat", methods=["POST"])
-def qa(request):
+def qa():
     # get data from request body
     question = request.json["question"]
 
@@ -59,7 +70,7 @@ def qa(request):
 
 
 @app.route("/api/pdfetch", methods=["POST"])
-def fetch_pdf(request):
+def fetch_pdf():
     data = request.json
     url = data.get("url")
 
@@ -76,7 +87,7 @@ def fetch_pdf(request):
 
 
 @app.route("/api/pdfetch-highlights", methods=["POST"])
-def get_page_numbers(request):
+def get_page_numbers():
     data = request.json
     document_id = request.json["documentId"]
     url = f"https://www.datev.de/dnlexom/help-center/v1/documents/{document_id}/pdf"
@@ -88,7 +99,7 @@ def get_page_numbers(request):
 
 
 @app.route("/api/get-tutorial", methods=["POST"])
-def get_click_tutorial_url(request):
+def get_click_tutorial_url():
     # Define the URL with the document ID
 
     document_id = request.json["documentId"]
@@ -143,9 +154,9 @@ if __name__ == "__main__":
     debug = False
 
     if (
-        os.environ["OPENAI_API_KEY"]
-        and os.environ["PINECONE_API_KEY"]
-        and os.environ["PINECONE_ENV"]
+        "OPENAI_API_KEY" in os.environ
+        and "PINECONE_API_KEY" in os.environ
+        and "PINECONE_ENV" in os.environ
     ):
         init_env(
             os.environ["OPENAI_API_KEY"],
