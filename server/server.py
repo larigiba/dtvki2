@@ -7,7 +7,7 @@ from flask import Flask, jsonify, send_file, request
 from flask_cors import CORS
 from src.hychat import init_env, get_chain
 from src.pdfetch import pdfetch_highlighted
-from src.db import create_new_conversation, insert_message
+from src.db import create_new_conversation, insert_message, add_feedback_to_message
 import requests
 
 # app instance
@@ -115,6 +115,8 @@ def qa():
     global conversation_id
     if conversation_id is None:
         conversation_id = create_new_conversation()
+        print("CREATING NEW CONVERSATION")
+        print(conversation_id)
     # get data from request body
     question = request.json["question"]
 
@@ -225,6 +227,46 @@ def get_click_tutorial_url():
         return jsonify({"url": tutorial_url}), 200
     else:
         return "", 200
+
+
+# add feedback and note to message
+@app.route("/api/add-feedback", methods=["POST"])
+def add_feedback():
+    global conversation_id
+    data = request.json
+    message_idx = data.get("messageIdx")
+    feedback = data.get("feedback")
+    note = data.get("note")
+
+    # update message
+    add_feedback_to_message(
+        conversation_id,
+        message_idx,
+        feedback,
+        note,
+    )
+
+    return jsonify({"message": "success"}), 200
+
+
+# reset convo
+@app.route("/api/reset-convo", methods=["POST"])
+def reset_convo():
+    global conversation_id
+    global sequence_number
+    global source_content_store
+    global page_numbers_store
+    global curr_doc_number
+    global messages
+
+    conversation_id = None
+    sequence_number = 0
+    source_content_store = {}
+    page_numbers_store = {}
+    curr_doc_number = 0
+    messages = []
+
+    return jsonify({"message": "success"}), 200
 
 
 def start_server(debug=False):

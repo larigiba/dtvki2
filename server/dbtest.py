@@ -55,7 +55,22 @@ CREATE TABLE IF NOT EXISTS messages (
 
 if __name__ == "__main__":
     # get input, either recreate or print all convos
-    recreate = input("Recreate tables (1) or print all conversations (2)? (1/2) ")
+    class bcolors:
+        HEADER = "\033[95m"
+        OKBLUE = "\033[94m"
+        OKCYAN = "\033[96m"
+        OKGREEN = "\033[92m"
+        WARNING = "\033[93m"
+        FAIL = "\033[91m"
+        ENDC = "\033[0m"
+        BOLD = "\033[1m"
+        UNDERLINE = "\033[4m"
+        ITALIC = "\x1B[3m"
+        ITALIC_END = "\x1B[0m"
+
+    recreate = input(
+        "Recreate tables (1), print all conversations (2) or delete one conversation (3)? (1/2/3) "
+    )
     if recreate == "1":
         with get_connection() as conn:
             with conn.cursor() as cursor:
@@ -90,14 +105,22 @@ if __name__ == "__main__":
                         (convo_id,),
                     )
                     messages = cursor.fetchall()
-                    print("-" * 50 + "CONVERSATION WITH ID " + str(convo_id) + "-" * 50)
+                    print("-" * 75 + "CONVERSATION WITH ID " + str(convo_id) + "-" * 75)
                     for message in messages:
                         # format datetime into nice format
                         message_datetime = message[3]
                         message_datetime = message_datetime.strftime(
                             "%Y-%m-%d %H:%M:%S"
                         )
-                        if message[6] == "AI" and message[7] is not None:
+                        if message[6] == "AI":
+                            print("[AI]")
+                        else:
+                            print("[Human]")
+                        if (
+                            message[6] == "AI"
+                            and message[7] is not None
+                            and len(message[7]) > 0
+                        ):
                             # for each source, print id, title and relevance, nicely formatted
                             print(
                                 "AI fetched sources with:\n"
@@ -115,7 +138,34 @@ if __name__ == "__main__":
                                     ]
                                 )
                             )
-                        print
+                        elif (
+                            message[6] == "AI"
+                            and message[7] is not None
+                            and len(message[7]) == 0
+                        ):
+                            print(
+                                f"{bcolors.BOLD}AI did not fetch any sources{bcolors.ENDC}"
+                            )
+                        rating_as_string = None
+                        if message[10] == 1:
+                            print(
+                                f"{bcolors.OKGREEN}Message was rated as positive {bcolors.ENDC}"
+                            )
+                        elif message[10] == -1:
+                            print(
+                                f"{bcolors.FAIL}Message was rated as negative {bcolors.ENDC}"
+                            )
+                        elif message[6] == "AI":
+                            print(f"{bcolors.BOLD}Message was not rated{bcolors.ENDC}")
+                        if message[11]:
+                            print(
+                                f"{bcolors.HEADER}Rating has note: {message[11]}{bcolors.ENDC}"
+                            )
+                        elif message[6] == "AI":
+                            print(
+                                f"{bcolors.BOLD}Rating does not have note.{bcolors.ENDC}"
+                            )
+
                         print(
                             str(message[6])
                             + " sent at "
@@ -124,3 +174,22 @@ if __name__ == "__main__":
                             + str(message[5])
                             + "\n"
                         )
+                        print("- - " * 20)
+    elif recreate == "3":
+        convo_id = input("Enter conversation id to delete: ")
+        with get_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    DELETE FROM messages WHERE conversation_id = %s;
+                    """,
+                    (convo_id,),
+                )
+                cursor.execute(
+                    """
+                    DELETE FROM conversations WHERE conversation_id = %s;
+                    """,
+                    (convo_id,),
+                )
+                conn.commit()
+        print("Conversation deleted.")

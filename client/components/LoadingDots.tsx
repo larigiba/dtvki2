@@ -4,8 +4,10 @@ const LoadingDots = () => {
   return (
     <div className="flex text-slate-400">
       <div className={`${circleCommonClasses} mr-1 animate-bounce`}></div>
-      <div className={`${circleCommonClasses} mr-1 animate-bounce200`}></div>
-      <div className={`${circleCommonClasses} animate-bounce400`}></div>
+      <div
+        className={`${circleCommonClasses} mr-1 animate-bounce delay-75`}
+      ></div>
+      <div className={`${circleCommonClasses} animate-bounce delay-150`}></div>
     </div>
   );
 };

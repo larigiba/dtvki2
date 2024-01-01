@@ -90,3 +90,33 @@ def insert_message(
                 ),
             )
             conn.commit()
+
+
+def add_feedback_to_message(
+    conversation_id,
+    sequence_number,
+    rating,
+    note=None,
+):
+    print("adding feedback to message")
+    print(conversation_id)
+    print(sequence_number)
+    print(rating)
+    print(note)
+    rating_as_int = 1 if rating == "positive" else -1
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE messages
+                SET rating = %s, note = %s
+                WHERE conversation_id = %s AND sequence_number = %s;
+                """,
+                (
+                    rating_as_int,
+                    note,
+                    conversation_id,
+                    sequence_number,
+                ),
+            )
+            conn.commit()

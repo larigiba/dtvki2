@@ -11,6 +11,7 @@ import {
   FileText,
   PlusCircle,
   MinusCircle,
+  RefreshCcw,
 } from "react-feather";
 import LoadingDots from "@/components/LoadingDots";
 import ResizeableTextArea from "@/components/ResizeableTextArea";
@@ -26,6 +27,20 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Home() {
   const [message, setMessage] = useState<string>("");
@@ -36,6 +51,9 @@ export default function Home() {
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const bottomTextAreaRef = useRef<HTMLTextAreaElement>(null);
   const [outputExpanded, setOutputExpanded] = useState<boolean>(false);
+  const positiveFeedbackTextFieldRef = useRef<HTMLTextAreaElement>(null);
+  const negativeFeedbackTextFieldRef = useRef<HTMLTextAreaElement>(null);
+  const messageIdxToRating = useRef(new Map<number, string>());
 
   const chatOutputRef = useRef<HTMLDivElement>(null);
 
@@ -43,6 +61,8 @@ export default function Home() {
   const sourceToTutorial = useRef(new Map<string, string>());
   const [currOpenSource, setCurrOpenSource] = useState<string>("");
   const [sourceOpen, setSourceOpen] = useState<boolean>(false);
+
+  const { toast } = useToast();
 
   const getServerURL = () => {
     return process.env.NODE_ENV === "development"
@@ -177,6 +197,23 @@ export default function Home() {
     }
   }, [history]);
 
+  const addFeedbackToMessage = (idx: number, feedback: string) => {
+    // call add-feedback api on server
+    const feedbackUrl = getServerURL() + "/api/add-feedback";
+    const note =
+      feedback == "positive"
+        ? positiveFeedbackTextFieldRef.current?.value
+        : negativeFeedbackTextFieldRef.current?.value;
+    axios.post(feedbackUrl, {
+      messageIdx: idx + 1, // skip prompt
+      feedback: feedback,
+      note: note,
+    });
+    messageIdxToRating.current.set(idx, feedback);
+    console.log("IDX TO RATING:");
+    console.log(console.log([...messageIdxToRating.current.entries()]));
+  };
+
   const debugHyChat = () => {
     const promise = new Promise((resolve, reject) => {
       const arrayOfStrings = [
@@ -221,6 +258,15 @@ export default function Home() {
       return null;
     }
   }
+
+  const resetConversation = () => {
+    setHistory([]);
+    setOutputExpanded(false);
+    setMessage("");
+    setBottomMessage("");
+    const resetConvoUrl = getServerURL() + "/api/reset-convo";
+    axios.post(resetConvoUrl);
+  };
 
   return (
     <main className="h-screen p-2 bg-white flex flex-col overflow-hidden">
@@ -280,16 +326,36 @@ export default function Home() {
               outputExpanded ? "bg-slate-100 h-[82%]" : "bg-transparent"
             } w-[90%] rounded-2xl flex flex-col max-h-full overflow-clip`}
           >
-            <ResizeableTextArea
-              outputExpanded={outputExpanded}
-              message={message}
-              handleClick={handleClick}
-              loading={loading}
-              setMessage={setMessage}
-              isDisabled={outputExpanded}
-              ref={textAreaRef}
-              placeholder="Sagen Sie mir, wie ich Ihnen helfen kann."
-            />
+            <div className="relative flex">
+              <ResizeableTextArea
+                outputExpanded={outputExpanded}
+                message={message}
+                handleClick={handleClick}
+                loading={loading}
+                setMessage={setMessage}
+                isDisabled={outputExpanded}
+                ref={textAreaRef}
+                placeholder="Sagen Sie mir, wie ich Ihnen helfen kann."
+              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Button
+                      onClick={resetConversation}
+                      className={`transition-all ${
+                        (!outputExpanded || loading) && `hidden invisible`
+                      } flex w-14 h-14 items-center justify-center rounded-full px-3 text-sm  bg-green-600 font-semibold text-white hover:bg-green-700 active:bg-green-800 absolute right-2 bottom-4 disabled:bg-green-100 disabled:text-green-400`}
+                    >
+                      <RefreshCcw />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Konversation zurücksetzen</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
             <div
               id="chat-output"
               ref={chatOutputRef}
@@ -329,7 +395,7 @@ export default function Home() {
                                     <div className="flex flex-row gap-4 items-center justify-between w-full">
                                       {message.relevances && (
                                         <span
-                                          className={`block relative w-fit h-8 p-2 text-sm text-slate-800 rounded-lg ${
+                                          className={`block relative w-fit h-8 p-2 text-sm text-slate-800 shadow-sm rounded-lg ${
                                             message.relevances[idx] == "high"
                                               ? "bg-green-400"
                                               : "bg-gray-300"
@@ -406,8 +472,101 @@ export default function Home() {
                             {message.content}
                           </div>
                           <div className="flex gap-2 mt-4 right-0">
-                            <ThumbsUp className="w-6 h-6 text-green-500" />
-                            <ThumbsDown className="w-6 h-6 text-red-500" />
+                            {messageIdxToRating.current.get(idx) !==
+                            undefined ? (
+                              <ThumbsUp
+                                className={`w-6 h-6 text-green-500 ${
+                                  messageIdxToRating.current.get(idx) ==
+                                    "positive" && "fill-current"
+                                }`}
+                              />
+                            ) : (
+                              <Dialog>
+                                <DialogTrigger>
+                                  <ThumbsUp className="w-6 h-6 text-green-500 transition-all hover:scale-110 duration-75 hover:fill-current hover:cursor-pointer" />
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>
+                                      Positive Rückmeldung hinterlassen
+                                    </DialogTitle>
+                                    <DialogDescription>
+                                      Hinterlassen Sie hier optional einen
+                                      Kommentar zu Ihrer Rückmeldung.
+                                    </DialogDescription>
+                                    <Textarea
+                                      ref={positiveFeedbackTextFieldRef}
+                                    />
+                                  </DialogHeader>
+                                  <DialogFooter>
+                                    <DialogClose asChild>
+                                      <Button
+                                        type="submit"
+                                        className="bg-green-600 hover:bg-green-700"
+                                        onClick={() => {
+                                          addFeedbackToMessage(idx, "positive");
+                                          toast({
+                                            title: "Vielen Dank!",
+                                            description:
+                                              "Ihr Feedback wurde gespeichert.",
+                                          });
+                                        }}
+                                      >
+                                        Absenden
+                                      </Button>
+                                    </DialogClose>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                            )}
+
+                            {messageIdxToRating.current.get(idx) !==
+                            undefined ? (
+                              <ThumbsDown
+                                className={`w-6 h-6 text-red-500 ${
+                                  messageIdxToRating.current.get(idx) ==
+                                    "negative" && "fill-current"
+                                }`}
+                              />
+                            ) : (
+                              <Dialog>
+                                <DialogTrigger>
+                                  <ThumbsDown className="w-6 h-6 text-red-500 transition-all hover:scale-110 duration-75 hover:fill-current hover:cursor-pointer" />
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>
+                                      Negative Rückmeldung hinterlassen
+                                    </DialogTitle>
+                                    <DialogDescription>
+                                      Hinterlassen Sie hier optional einen
+                                      Kommentar zu Ihrer Rückmeldung.
+                                    </DialogDescription>
+                                    <Textarea
+                                      ref={negativeFeedbackTextFieldRef}
+                                    />
+                                  </DialogHeader>
+                                  <DialogFooter>
+                                    <DialogClose asChild>
+                                      <Button
+                                        type="submit"
+                                        className="bg-green-600 hover:bg-green-700"
+                                        onClick={() => {
+                                          addFeedbackToMessage(idx, "negative");
+                                          toast({
+                                            title: "Vielen Dank!",
+                                            description:
+                                              "Ihr Feedback wurde gespeichert.",
+                                          });
+                                        }}
+                                      >
+                                        Absenden
+                                      </Button>
+                                    </DialogClose>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -429,7 +588,6 @@ export default function Home() {
                     );
                 }
               })}
-
               {loading && (
                 <div ref={lastMessageRef} className="flex gap-2">
                   <div className="bg-gradient-to-r from-green-400 to-green-700 text-white font-bold relative w-14 h-14 bg-purple-100 rounded-full flex justify-center items-center text-center p-5 shadow-xl">
@@ -500,6 +658,7 @@ export default function Home() {
           </div>
         </div>
       </div>
+      <Toaster />
     </main>
   );
 }

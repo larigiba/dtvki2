@@ -49,12 +49,12 @@ def pdfetch_highlighted(url, text_chunks):
 
         for page in pdfIn:
             page_number = page.number + 1  # PyMuPDF page numbers start at 0
-            print(page)
+            # print(page)
 
             if page_number not in text_chunks:
                 continue
             curr_text_chunks = text_chunks[page_number]
-            print("PAGE NUMBER", page_number, "TEXT CHUNKS", curr_text_chunks)
+            # print("PAGE NUMBER", page_number, "TEXT CHUNKS", curr_text_chunks)
             # print(text_chunks)
             # print([len(chunk) for chunk in text_chunks])
             # fixed_text_chunks = []
@@ -64,8 +64,8 @@ def pdfetch_highlighted(url, text_chunks):
             # print(fixed_text_chunks)
             text_instances = [page.search_for(text) for text in curr_text_chunks]
 
-            print("TEXT INSTANCES")
-            print(text_instances)
+            # print("TEXT INSTANCES")
+            # print(text_instances)
 
             for text, instances in zip(text_chunks, text_instances):
                 for inst in instances:
