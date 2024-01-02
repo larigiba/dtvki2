@@ -264,6 +264,12 @@ export default function Home() {
     setOutputExpanded(false);
     setMessage("");
     setBottomMessage("");
+    setLoading(false);
+    setCurrOpenSource("");
+    setSourceOpen(false);
+    sourceToPdf.current.clear();
+    sourceToTutorial.current.clear();
+    messageIdxToRating.current.clear();
     const resetConvoUrl = getServerURL() + "/api/reset-convo";
     axios.post(resetConvoUrl);
   };
@@ -286,8 +292,7 @@ export default function Home() {
           <br />
           Geben Sie hier oben Ihre Frage in natürlicher Sprache ein.
           <br />
-          Das KI-System wird Ihnen eine maßgeschneiderte Antwort auf Basis der
-          Dokumente im DATEV-Hilfe-Center erstellen.
+          Das KI-System wird Ihnen eine maßgeschneiderte Antwort erstellen.
           <br />
           Das System beachtet hierbei ausschließlich diese Dokumente, allgemeine
           Inhalte aus dem Netz werden nicht berücksichtigt.
@@ -317,9 +322,6 @@ export default function Home() {
       </div>
       <div className="h-screen bg-white flex flex-row gap-1 rounded-xl gradientbg">
         <div className="flex flex-col z-10 gap-4 w-full items-center h-full max-h-[93%]">
-          <span style={{ position: "absolute", bottom: "2em", right: "2em" }}>
-            <Datev size="100" color="white" />
-          </span>
           <div className="block h-2"></div>
           <div
             className={`transition-all ${
