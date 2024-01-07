@@ -69,7 +69,7 @@ def query_chain(question):
         sources.append(source)
 
     # filter docs, remove each with score < 11
-    sources = [s for s in sources if s["score"] > 11]
+    sources = [s for s in sources if s["score"] > 5]  # TODO: bump back to 11
     if len(sources) == 0:
         answer = "Leider konnte für Ihre Anfrage kein relevantes Dokument im DATEV-Hilfe-Center gefunden werden. Sehr gerne helfe ich Ihnen bei einer anderen Anfrage weiter."
 
@@ -82,7 +82,7 @@ def query_chain(question):
     filtered_sources = []
     relevance_threshholds = {
         "high relevance": 13,
-        "medium relevance": 11,
+        "medium relevance": 5,  # TODO: add low relevance and push med relevance back to 11
         "irrelevance": 0,
     }
     for docid, curr_sources in doc_to_sources.items():
@@ -206,9 +206,11 @@ def get_click_tutorial_url():
     new_url = f"https://www.datev.de/dnlexom/help-center/v1/documents/{document_id}"
 
     # Perform the HTTP GET request
-    response = requests.get(new_url)
-    response.raise_for_status()
-
+    try:
+        response = requests.get(new_url)
+        response.raise_for_status()
+    except:
+        return "", 200
     # Extract HTML content from the response
     html_string = response.json().get("content")
 
