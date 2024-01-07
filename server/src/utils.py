@@ -32,7 +32,7 @@ class PineconeHybridSearchRetrieverWithScores(PineconeHybridSearchRetriever):
         result = self.index.query(
             vector=dense_vec,
             sparse_vector=sparse_vec,
-            top_k=self.top_k,
+            top_k=10,
             include_metadata=True,
             namespace=self.namespace,
         )
